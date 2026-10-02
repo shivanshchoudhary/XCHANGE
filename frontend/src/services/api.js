@@ -1,5 +1,7 @@
 const rawApiUrl = import.meta.env.VITE_API_URL;
-const API_BASE = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`) : 'https://mrchange-qjrl.onrender.com/api';
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const defaultBase = isLocal ? 'http://localhost:5000/api' : '/api';
+const API_BASE = rawApiUrl ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`) : defaultBase;
 
 export async function fetchApi(endpoint, options = {}) {
   const token = localStorage.getItem('mrx_token');
