@@ -140,13 +140,13 @@ export const deviceService = {
 
     const existing = JSON.parse(localStorage.getItem('mrx_devices') || '[]');
     const newDevice = {
-      id: createdObj.id || createdObj.deviceId || formData.id || `dev_${Date.now()}`,
-      device_code: createdObj.device_code || createdObj.deviceCode || `MRX-${String(existing.length + 10).padStart(5, '0')}`,
       ...formData,
       ...createdObj,
-      status: formData.status || createdObj.status || 'OLD_INVENTORY',
-      intake_date: formData.date || createdObj.intake_date || new Date().toISOString().split('T')[0],
-      created_at: new Date().toISOString()
+      id: createdObj.id || createdObj.deviceId || formData.id || `dev_${Date.now()}`,
+      device_code: createdObj.device_code || createdObj.deviceCode || formData.device_code || `MRX-${String(existing.length + 10).padStart(5, '0')}`,
+      status: createdObj.status || formData.status || 'OLD_INVENTORY',
+      intake_date: createdObj.intake_date || formData.date || formData.intake_date || new Date().toISOString().split('T')[0],
+      created_at: createdObj.created_at || new Date().toISOString()
     };
 
     // Filter out previous drafts of the same device before adding
@@ -252,15 +252,38 @@ export const saleService = {
     } catch (err) {
       console.warn("Backend sale create offline fallback:", err.message);
     }
+    const allLocalDevs = [
+      ...JSON.parse(localStorage.getItem('mrx_devices') || '[]'),
+      ...JSON.parse(localStorage.getItem('mrx_old_inventory') || '[]'),
+      ...JSON.parse(localStorage.getItem('mrx_old_in_hand_stock') || '[]')
+    ];
+    const devMatch = allLocalDevs.find(d => String(d.id) === String(payload.device_id) || String(d.device_code) === String(payload.device_id));
+    const effectiveBrand = payload.brand || devMatch?.brand || devMatch?.newBrand || 'Device';
+    const effectiveModel = payload.model || devMatch?.model || devMatch?.newModel || 'Model';
+    const effectivePurchase = Number(payload.purchase_amount || payload.purchase || devMatch?.purchase_amount || devMatch?.amount || 0);
+    const effectiveExchange = Number(payload.exchangeValue || payload.bev || devMatch?.exchangeValue || devMatch?.bev || 0);
+    const effectiveRepair = Number(payload.repair_cost || payload.repairCost || devMatch?.repair_cost || devMatch?.repairCost || 0);
+    const effectiveSelling = Number(payload.selling_price || payload.selling || 0);
+    const effectiveProfit = effectiveSelling - (effectivePurchase + effectiveExchange + effectiveRepair);
+
     const localSales = JSON.parse(localStorage.getItem('mrx_sales') || '[]');
     const newSale = {
       id: res.saleId || `SALE-${Date.now()}`,
       date: payload.date || new Date().toISOString().split('T')[0],
-      brand: payload.brand || 'Device',
-      model: payload.model || 'Model',
-      purchase: Number(payload.purchase_amount || payload.purchase || 0),
-      selling: Number(payload.selling_price || payload.selling || 0),
-      profit: Number(payload.selling_price || payload.selling || 0) - Number(payload.purchase_amount || payload.purchase || 0),
+      brand: effectiveBrand,
+      model: effectiveModel,
+      purchase_amount: effectivePurchase,
+      purchase: effectivePurchase,
+      pv: effectivePurchase,
+      selling_price: effectiveSelling,
+      selling: effectiveSelling,
+      ppu: effectiveSelling,
+      totalAmount: effectiveSelling,
+      exchangeValue: effectiveExchange,
+      bev: effectiveExchange,
+      repair_cost: effectiveRepair,
+      profit: effectiveProfit,
+      unitProfit: effectiveProfit,
       admin: payload.admin || payload.sold_by || 'Jeet',
       customerName: payload.customer_name || 'Customer'
     };
