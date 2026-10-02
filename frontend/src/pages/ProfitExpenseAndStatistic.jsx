@@ -122,16 +122,16 @@ export default function ProfitExpenseAndStatistic() {
       const combinedSalesMap = new Map();
       [...remoteSales, ...localSales].forEach(s => {
         if (!s) return;
-        const actualAmount = Number(s.actualAmount || s.actual_amount || s.totalAmount || s.selling || s.selling_price || s.soldPrice || s.ppu || 0);
-        const sellingPrice = Number(s.sellingPrice || s.selling_price || s.purchase || s.purchase_amount || s.oldAmount || s.pv || s.boughtCost || 0);
-        const bevVal = Number(s.bev || s.exchangeValue || s.newAmount || 0);
+        const actualAmount = Number(s.selling || s.selling_price || s.actualAmount || s.actual_amount || s.totalAmount || s.soldPrice || s.ppu || 0);
+        const purchaseCost = Number(s.purchase || s.purchase_amount || s.oldAmount || s.pv || s.boughtCost || s.costPrice || 0);
+        const bevVal = Number(s.exchangeValue || s.bev || s.newAmount || 0);
         const repairVal = Number(s.repair_cost || s.repairCost || 0);
         
         let perMobileProfit = 0;
         if (s.profit !== undefined && s.profit !== null && !isNaN(Number(s.profit)) && Number(s.profit) !== 0) {
           perMobileProfit = Number(s.profit);
         } else {
-          perMobileProfit = actualAmount - (sellingPrice + bevVal + repairVal);
+          perMobileProfit = actualAmount - (purchaseCost + bevVal + repairVal);
         }
 
         const norm = {
@@ -141,10 +141,16 @@ export default function ProfitExpenseAndStatistic() {
           brand: s.brand || 'Device',
           model: s.model || 'Mobile',
           actualAmount: actualAmount,
-          sellingPrice: sellingPrice,
-          purchase: sellingPrice,
           selling: actualAmount,
+          ppu: actualAmount,
+          purchase: purchaseCost,
+          purchase_amount: purchaseCost,
+          pv: purchaseCost,
+          exchangeValue: bevVal,
+          bev: bevVal,
+          repair_cost: repairVal,
           profit: perMobileProfit,
+          unitProfit: perMobileProfit,
           date: s.date || s.sale_date || new Date().toISOString().split('T')[0]
         };
 
@@ -224,9 +230,17 @@ export default function ProfitExpenseAndStatistic() {
             admin: s.admin || s.admin_name || s.soldBy || s.sold_by || 'Jeet Khubchandani',
             brand: s.brand || 'Device',
             model: s.model || 'Mobile',
-            purchase: buyVal,
+            actualAmount: sellingVal,
             selling: sellingVal,
+            ppu: sellingVal,
+            purchase: buyVal,
+            purchase_amount: buyVal,
+            pv: buyVal,
+            exchangeValue: bevVal,
+            bev: bevVal,
+            repair_cost: repairVal,
             profit: calculatedProfit,
+            unitProfit: calculatedProfit,
             date: s.date || s.sale_date || new Date().toISOString().split('T')[0]
           };
         }).filter(Boolean);
@@ -428,8 +442,10 @@ export default function ProfitExpenseAndStatistic() {
     let unitProfit = 0;
     if (p.unitProfit !== undefined && p.unitProfit !== null && !isNaN(p.unitProfit)) {
       unitProfit = Number(p.unitProfit);
+    } else if (p.profit !== undefined && p.profit !== null && !isNaN(p.profit)) {
+      unitProfit = Number(p.profit);
     } else {
-      unitProfit = ppu - (pv + bev);
+      unitProfit = ppu - (pv + bev + (Number(p.repair_cost || p.repairCost) || 0));
     }
     return sum + (unitProfit * units);
   }, 0);
@@ -1070,7 +1086,7 @@ export default function ProfitExpenseAndStatistic() {
                         <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.model}</div>
                         <div style={{ fontSize: '11px', color: '#64748b' }}>{item.brand}</div>
                       </td>
-                      <td style={{ fontWeight: 600, color: '#475569' }}><CurrencyAmount amount={item.sellingPrice !== undefined ? item.sellingPrice : item.purchase} /></td>
+                      <td style={{ fontWeight: 600, color: '#475569' }}><CurrencyAmount amount={item.purchase !== undefined ? item.purchase : (item.purchase_amount || 0)} /></td>
                       <td style={{ fontWeight: 700, color: '#0284c7' }}><CurrencyAmount amount={item.actualAmount !== undefined ? item.actualAmount : item.selling} /></td>
                       <td style={{ fontWeight: 800, color: item.profit >= 0 ? '#16a34a' : '#ef4444' }}>
                         <CurrencyAmount amount={item.profit} />
