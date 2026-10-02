@@ -271,6 +271,22 @@ export function createMockPool() {
         return [filtered, []];
       }
 
+      // SELECT sales
+      if (s.includes('from sales')) {
+        const enrichedSales = (store.mockSales || []).map(sale => {
+          const device = (store.mockDevices || []).find(d => String(d.id) === String(sale.device_id)) || {};
+          return {
+            ...sale,
+            brand: device.brand || 'Device',
+            model: device.model || 'Model',
+            imei: device.imei || null,
+            purchase_amount: device.purchase_amount || 0,
+            repair_cost: 0
+          };
+        });
+        return [enrichedSales, []];
+      }
+
       // SELECT transactions
       if (s.includes('from transactions')) {
         let rows = [...store.mockTransactions];
@@ -285,6 +301,47 @@ export function createMockPool() {
       // SELECT investments
       if (s.includes('from investments')) {
         return [store.mockInvestments, []];
+      }
+
+      // INSERT INTO sales
+      if (s.includes('insert into sales')) {
+        const saleId = params[0] || uuidv4();
+        const deviceId = params[1];
+        const sellingPrice = parseFloat(params[2] || 0);
+        const discountAmount = parseFloat(params[3] || 0);
+        const customerName = params[4] || null;
+        const customerPhone = params[5] || null;
+        const paymentMethod = params[6] || 'Cash';
+        const paymentStatus = params[7] || 'PAID';
+        const remarks = params[8] || null;
+        const soldBy = params[9] || 'Staff';
+
+        const device = (store.mockDevices || []).find(d => String(d.id) === String(deviceId));
+        if (device) {
+          device.status = 'SOLD';
+        }
+
+        const newSale = {
+          id: saleId,
+          device_id: deviceId,
+          selling_price: sellingPrice,
+          discount_amount: discountAmount,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          payment_method: paymentMethod,
+          payment_status: paymentStatus,
+          remarks: remarks,
+          sold_by: soldBy,
+          sold_at: new Date().toISOString()
+        };
+        store.mockSales.unshift(newSale);
+        saveStore();
+        return [{ affectedRows: 1, insertId: store.mockSales.length }, []];
+      }
+
+      // INSERT INTO device_status_history
+      if (s.includes('insert into device_status_history')) {
+        return [{ affectedRows: 1 }, []];
       }
 
       // INSERT INTO devices
