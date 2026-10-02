@@ -250,15 +250,18 @@ export default function OldInventory() {
         const paidBy = (item.paid_by || item.purchasedBy || item.paidBy || '').trim().toLowerCase();
         const date = item.intake_date || item.created_at || item.date || '';
 
-        const fingerprint = item.device_code
-          ? `code_${item.device_code}`
-          : item.id ? `id_${item.id}`
-          : `${brand}|${model}|${item.storage || ''}|${item.ram || ''}|${amount}|${paidBy}|${date}`;
+        const specKey = `${brand}|${model}|${item.storage || ''}|${item.ram || ''}|${amount}|${paidBy}|${date}`;
+        const idKey = item.id ? `id_${item.id}` : null;
+        const codeKey = item.device_code ? `code_${item.device_code}` : null;
 
-        if (!seenFingerprints.has(fingerprint)) {
-          seenFingerprints.add(fingerprint);
-          inventoryDevices.push(item);
+        if (seenFingerprints.has(specKey) || (idKey && seenFingerprints.has(idKey)) || (codeKey && seenFingerprints.has(codeKey))) {
+          continue;
         }
+
+        seenFingerprints.add(specKey);
+        if (idKey) seenFingerprints.add(idKey);
+        if (codeKey) seenFingerprints.add(codeKey);
+        inventoryDevices.push(item);
       }
       
       setDevices(inventoryDevices);
