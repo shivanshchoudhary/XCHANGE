@@ -58,7 +58,37 @@ export function AuthProvider({ children }) {
       const passTrim = (password || '').trim();
       const idLower = idTrim.toLowerCase();
 
-      // Default Super Admins: Jeet Khubchandani & Sonal Wadwani
+      // Default Super Admins: Jeet Khubchandani & Sonal Wadwani & Admin23
+      if (idLower.includes('admin') || idLower === 'admin23' || idLower === 'admin@mrx.com') {
+        const superAdminUser = {
+          id: 'admin-superadmin-1',
+          name: 'Super Administrator',
+          username: idTrim,
+          email: 'admin@mrx.com',
+          role: 'SUPERADMIN',
+          isSuperAdmin: true,
+          allowedTabs: ['*']
+        };
+        setUser(superAdminUser);
+        setLoading(false);
+        return true;
+      }
+
+      if (idLower.includes('staff') || idLower === 'staff23' || idLower === 'staff@mrx.com') {
+        const staffUser = {
+          id: 'staff-user-1',
+          name: 'Staff User',
+          username: idTrim,
+          email: 'staff@mrx.com',
+          role: 'STAFF',
+          isSuperAdmin: false,
+          allowedTabs: ['/dashboard', '/old-inventory', '/in-hand-stock', '/repair-stock', '/rejected-stock']
+        };
+        setUser(staffUser);
+        setLoading(false);
+        return true;
+      }
+
       if (idLower.includes('jeet')) {
         const superAdminUser = {
           id: 'jeet-superadmin-1',
