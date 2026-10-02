@@ -335,6 +335,12 @@ export default function OldInHandStock() {
 
     const requestedUnits = Number(sellForm.unit) || 1;
 
+    const intakeCost = Number(selectedSellDevice.purchase_amount || selectedSellDevice.amount || selectedSellDevice.paidAmount || 0);
+    const exchValue = Number(selectedSellDevice.exchangeValue || selectedSellDevice.bev || selectedSellDevice.newAmount || 0);
+    const repCost = Number(selectedSellDevice.repair_cost || selectedSellDevice.repairCost || 0);
+    const saleTotal = Number(sellForm.totalAmount) || Number(sellForm.soldPrice) || 0;
+    const calcProfit = saleTotal - (intakeCost + exchValue + repCost);
+
     // Record sale in mrx_sales
     const newSale = {
       id: `SALE-${Date.now()}`,
@@ -345,10 +351,19 @@ export default function OldInHandStock() {
       soldBy: sellForm.soldBy,
       quantity: requestedUnits,
       unitPrice: Number(sellForm.soldPrice) || 0,
-      totalAmount: Number(sellForm.totalAmount) || 0,
+      totalAmount: saleTotal,
+      selling: saleTotal,
+      selling_price: saleTotal,
+      ppu: saleTotal,
       paidAmount: Number(sellForm.paidAmount) || 0,
-      purchase_amount: Number(selectedSellDevice.purchase_amount || selectedSellDevice.amount || selectedSellDevice.paidAmount || 0),
-      purchase: Number(selectedSellDevice.purchase_amount || selectedSellDevice.amount || selectedSellDevice.paidAmount || 0),
+      purchase_amount: intakeCost,
+      purchase: intakeCost,
+      pv: intakeCost,
+      exchangeValue: exchValue,
+      bev: exchValue,
+      repair_cost: repCost,
+      profit: calcProfit,
+      unitProfit: calcProfit,
       paymentMode: sellForm.paymentType || 'Cash',
       status: 'Sold'
     };
