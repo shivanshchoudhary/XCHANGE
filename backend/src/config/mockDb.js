@@ -12,6 +12,63 @@ function ensureDataDir() {
   }
 }
 
+const DEFAULT_USERS = [
+  {
+    id: 'admin-1',
+    name: 'Super Administrator',
+    email: 'admin23@mrx.com',
+    auth_identifier: 'Admin23',
+    role: 'SUPERADMIN',
+    active: true,
+    password_hash: '$2a$10$UfAp7Za6sffPkgd8YdCSFuIh5MVSlH80cX2ec0.L1YHJY9X8RHrVi' // admin123
+  },
+  {
+    id: 'admin-2',
+    name: 'System Admin',
+    email: 'admin@mrx.com',
+    auth_identifier: 'admin',
+    role: 'SUPERADMIN',
+    active: true,
+    password_hash: '$2a$10$UfAp7Za6sffPkgd8YdCSFuIh5MVSlH80cX2ec0.L1YHJY9X8RHrVi' // admin123
+  },
+  {
+    id: 'jeet-1',
+    name: 'Jeet Khubchandani',
+    email: 'jeet@mrx.com',
+    auth_identifier: 'Jeet',
+    role: 'SUPERADMIN',
+    active: true,
+    password_hash: '$2a$10$UfAp7Za6sffPkgd8YdCSFuIh5MVSlH80cX2ec0.L1YHJY9X8RHrVi' // admin123
+  },
+  {
+    id: 'sonal-1',
+    name: 'Sonal Wadwani',
+    email: 'sonal@mrx.com',
+    auth_identifier: 'Sonal',
+    role: 'SUPERADMIN',
+    active: true,
+    password_hash: '$2a$10$UfAp7Za6sffPkgd8YdCSFuIh5MVSlH80cX2ec0.L1YHJY9X8RHrVi' // admin123
+  },
+  {
+    id: 'staff-1',
+    name: 'Staff User',
+    email: 'staff23@mrx.com',
+    auth_identifier: 'Staff23',
+    role: 'STAFF',
+    active: true,
+    password_hash: '$2a$10$fUPZd.gYfA27obcCkN4WxOuO3IkK0chWeE7l.AQbCxj0DkclgIR/e' // staff123
+  },
+  {
+    id: 'staff-2',
+    name: 'Staff User',
+    email: 'staff@mrx.com',
+    auth_identifier: 'staff',
+    role: 'STAFF',
+    active: true,
+    password_hash: '$2a$10$fUPZd.gYfA27obcCkN4WxOuO3IkK0chWeE7l.AQbCxj0DkclgIR/e' // staff123
+  }
+];
+
 function loadStore() {
   ensureDataDir();
   if (fs.existsSync(STORE_FILE)) {
@@ -19,6 +76,7 @@ function loadStore() {
       const raw = fs.readFileSync(STORE_FILE, 'utf8');
       const parsed = JSON.parse(raw);
       return {
+        mockUsers: Array.isArray(parsed.mockUsers) && parsed.mockUsers.length > 0 ? parsed.mockUsers : [...DEFAULT_USERS],
         mockDevices: Array.isArray(parsed.mockDevices) ? parsed.mockDevices : [],
         mockRepairs: Array.isArray(parsed.mockRepairs) ? parsed.mockRepairs : [],
         mockRejections: Array.isArray(parsed.mockRejections) ? parsed.mockRejections : [],
@@ -33,6 +91,7 @@ function loadStore() {
     }
   }
   return {
+    mockUsers: [...DEFAULT_USERS],
     mockDevices: [],
     mockRepairs: [],
     mockRejections: [],
@@ -144,24 +203,51 @@ export function createMockPool() {
 
       // SELECT users
       if (s.includes('from users')) {
-        return [[
-          {
-            id: 'admin-1',
-            name: 'System Superadmin',
-            email: 'admin23@mrx.com',
-            auth_identifier: 'Admin23',
-            role: 'SUPERADMIN',
-            password_hash: '$2a$10$wE8wJqQ9r1qS2vB7P7gU0eR8qL.Jm1H2h4g5f6e7d8c9b0a1b2c3d'
-          },
-          {
-            id: 'staff-1',
-            name: 'Staff User',
-            email: 'staff23@mrx.com',
-            auth_identifier: 'Staff23',
-            role: 'STAFF',
-            password_hash: '$2a$10$wE8wJqQ9r1qS2vB7P7gU0eR8qL.Jm1H2h4g5f6e7d8c9b0a1b2c3d'
-          }
-        ], []];
+        let users = [...store.mockUsers];
+        if (params && params.length > 0) {
+          const searchParam = String(params[0]).toLowerCase();
+          users = users.filter(u => 
+            (u.email && u.email.toLowerCase() === searchParam) ||
+            (u.auth_identifier && u.auth_identifier.toLowerCase() === searchParam)
+          );
+        }
+        return [users, []];
+      }
+
+      // INSERT INTO users
+      if (s.includes('insert into users')) {
+        const newUser = {
+          id: params[0] || uuidv4(),
+          name: params[1] || 'User',
+          email: params[2] || '',
+          password_hash: params[3] || '',
+          auth_identifier: params[4] || '',
+          role: params[5] || 'STAFF',
+          active: true
+        };
+        store.mockUsers = store.mockUsers.filter(u => 
+          u.email.toLowerCase() !== newUser.email.toLowerCase() && 
+          u.auth_identifier.toLowerCase() !== newUser.auth_identifier.toLowerCase()
+        );
+        store.mockUsers.push(newUser);
+        saveStore();
+        return [{ affectedRows: 1, insertId: store.mockUsers.length }, []];
+      }
+
+      // UPDATE users
+      if (s.includes('update users')) {
+        if (s.includes('role = ?')) {
+          const role = params[0];
+          const searchParam = String(params[1] || params[2] || '').toLowerCase();
+          store.mockUsers = store.mockUsers.map(u => {
+            if ((u.email && u.email.toLowerCase() === searchParam) || (u.auth_identifier && u.auth_identifier.toLowerCase() === searchParam)) {
+              return { ...u, role };
+            }
+            return u;
+          });
+          saveStore();
+        }
+        return [{ affectedRows: 1 }, []];
       }
 
       // SELECT devices
