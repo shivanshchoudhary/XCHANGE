@@ -177,7 +177,11 @@ export default function AddMobileModal({ isOpen, onClose, onSuccess }) {
     // Save strictly to mrx_old_inventory with status OLD_INVENTORY by default
     try {
       const oldInventoryStock = JSON.parse(localStorage.getItem('mrx_old_inventory') || '[]');
-      const filteredInv = oldInventoryStock.filter(d => String(d.id) !== String(targetObj.id));
+      const filteredInv = oldInventoryStock.filter(d => 
+        String(d.id) !== String(targetObj.id) &&
+        (!targetObj.device_code || String(d.device_code) !== String(targetObj.device_code)) &&
+        !(d.brand === targetObj.brand && d.model === targetObj.model && Number(d.purchase_amount) === Number(targetObj.purchase_amount) && d.intake_date === targetObj.intake_date)
+      );
       localStorage.setItem('mrx_old_inventory', JSON.stringify([{ ...targetObj, status: 'OLD_INVENTORY' }, ...filteredInv]));
     } catch (e) {
       console.error('Error writing to localStorage:', e);
